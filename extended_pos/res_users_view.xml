@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<openerp>
+    <data>
+        <record id="res_users_form_view_extended" model="ir.ui.view">
+            <field name="name">res.users.form.view.extended</field>
+            <field name="model">res.users</field>
+            <field name="inherit_id" ref="base.view_users_form" />
+            <field name="arch" type="xml">
+                <xpath expr="//page[@string='Point of Sale']" position="inside">
+                    <group> <!-- added code -->
+                        <field name="cashier_ids" nolabel="1">
+                            <tree string="Cashiers" editable="bottom">
+                                <field name="name"/>
+                            </tree>
+                        </field>
+                    </group>
+                </xpath>
+            </field>
+        </record>
+     </data>
+</openerp>

@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<openerp>
+    <data>
+
+    <record id="view_pos_order_tree_extended" model="ir.ui.view">
+        <field name="name">view.pos.order.tree.extended</field>
+        <field name="model">pos.order</field>
+        <field name="inherit_id" ref="point_of_sale.view_pos_order_tree" />
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='user_id']" position="replace">
+                <field name="user_id" invisible="1"/><!--added code -->
+            </xpath>
+            <xpath expr="//field[@name='user_id']" position="after">
+                <field name="cashier_id"/>  <!--added code -->
+            </xpath>
+        </field>
+    </record>
+
+        <!-- pos cashier form view -->
+     <record id="pos_cash_form" model="ir.ui.view">
+            <field name="name">pos.cash.form</field>
+            <field name="model">res.cashier</field>
+            <field name="arch" type="xml">
+                <form string="Pos Cashier">
+                    <group col="4">
+                        <field name="name"/>
+                        <field name="user_id"/>
+                        <field name="visible_in_pos"/>
+                    </group>
+                </form>
+            </field>
+        </record>
+              <!-- pos cashier tree view -->
+        <record model="ir.ui.view" id="pos_cash_tree">
+            <field name="name">pos.cash.tree</field>
+            <field name="model">res.cashier</field>
+            <field name="arch" type="xml">
+                <tree string="pos cashier">
+                        <field name="name"/>
+                        <field name="user_id"/>
+                        <field name="visible_in_pos"/>
+                </tree>
+            </field>
+        </record>
+                <!-- pos cashier action -->
+        <record id="pos_cashier_action" model="ir.actions.act_window">
+            <field name="name">Cashier</field>
+            <field name="res_model">res.cashier</field>
+            <field name="view_type">form</field>
+            <field name="view_mode">form,tree</field>
+        </record>
+               <!-- pos cashier menu -->
+        <menuitem id="menu_pos_cashier" parent="point_of_sale.menu_point_config_product"
+            sequence="3" action="pos_cashier_action"/>
+     </data>
+</openerp>
