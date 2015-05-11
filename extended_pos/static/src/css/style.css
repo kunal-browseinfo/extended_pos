@@ -1,7 +1,17 @@
-.pos .pos-branding .username {
+#cashier {
     border:0px;
     background-color: rgb(57, 57, 57);
-    margin-right:0px;
-    margin-top: 11px;
-    font-size: 21px;
+    color: #DDD;
+    font-weight: 500;
+    font-size: 16px;
+    font-style: italic;
+    margin-right: 32px;
+    width: 110px;
+}
+.pos .pos-rightheader {
+    position: absolute;
+    left:295px !important;
+    right:0;
+    top:0;
+    height:100%;
 }

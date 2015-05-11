@@ -32,7 +32,6 @@
         #'security/ir.model.access.csv',
         'views/pos_extend.xml',
         'pos_extend_view.xml',
-        'res_users_view.xml',
     ],
     'qweb': ['static/src/xml/*.xml'],
     'css': ['static/src/css/style.css'],

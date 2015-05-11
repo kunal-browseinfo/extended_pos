@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
     <templates id="template_pos_extended" inherit_id="point_of_sale.template" xml:space="preserve">
         <t t-name="UsernameWidget">
-            <select class='username' name='user_id'>
+            <!-- select class='username' name='user_id'>
                 <t t-foreach='widget.get_name()' t-as='cashier'>
                     <option t-att-value='cashier.id'>
                         <t t-esc='cashier.name'/>
                     </option>
                 </t>
-            </select>
+            </select-->
         </t>
 
         <t t-name="PosTicket">
@@ -18,7 +18,7 @@
 	            <br />
 	            <t t-esc="widget.pos.company.name"/><br />
 	            Phone: <t t-esc="widget.pos.company.phone || ''"/><br />
-	            User: <t t-esc="order.changed.client ? order.changed.client.name : widget.pos.user.name"/><br />
+	            User: <t t-esc="order.changed.cashiers ? order.changed.cashiers.name : order.get_cashiers().name"/><br />
 	            Shop: <t t-esc="widget.pos.shop.name"/><br />
 	            <br />
 	            <t t-if="widget.pos.config.receipt_header">
@@ -106,7 +106,10 @@
 	    </t>
 
         <t t-name="OrderButtonWidgets">
-            <span class="order-button select-order">
+            <span id="cashier" class="order-button select-order">
+                <t t-esc="(widget.order.get_cashiers() ? widget.order.get_cashiers_name() :'Unknown Cashier')"/>
+            </span>
+            <span id="customer" class="order-button select-order">
                 <t t-if='widget.selected'>
                     <span class='order-sequence'>
                         <t t-esc='widget.order.sequence_number' />
@@ -114,7 +117,7 @@
                     <t t-if="widget.order.get_client()">
                         <i class='fa fa-user'/>
                     </t>
-                    <t t-esc="(widget.order.get_client() ? widget.order.get_client_name()+' : ':'Unknown Cashier: ') + widget.order.get('creationDate').toString('t')"/>
+                    <t t-esc="(widget.order.get_client() ? widget.order.get_client_name()+' : ':'Unknown Customer: ') + widget.order.get('creationDate').toString('t')"/>
                 </t>
                 <t t-if='!widget.selected'>
                     <span class='order-sequence'>
@@ -259,3 +262,4 @@
 
 
     </templates>
+

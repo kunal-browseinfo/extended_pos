@@ -52,6 +52,5 @@ class res_cashier(osv.osv):
     _name = 'res.cashier'
     _columns = {
         'name': fields.char('Name', required=True),
-        'user_id': fields.many2one('res.users', 'User', required=True),
         'visible_in_pos': fields.boolean('Visible in the Point of Sale', help='Check if you want this cashier to appear in the Point of Sale.'),
     }

@@ -15,26 +15,10 @@ function extend_pos(instance, module) { //module is instance.point_of_sale
         },
         _cashier_search_string: function(cashier){
             var str =  cashier.name;
-            /*if(partner.ean13){
-                str += '|' + partner.ean13;
-            }
-            if(partner.address){
-                str += '|' + partner.address;
-            }
-            if(partner.phone){
-                str += '|' + partner.phone.split(' ').join('');
-            }
-            if(partner.mobile){
-                str += '|' + partner.mobile.split(' ').join('');
-            }
-            if(partner.email){
-                str += '|' + partner.email;
-            }*/
             str = '' + cashier.id + ':' + str.replace(':','') + '\n';
             return str;
         },
         add_cashiers: function(cashiers){
-            console.log("got cashiersssssssssssssssssssss", cashiers);
             var updated_count = 0;
             var new_write_date = '';
             for(var i = 0, len = cashiers.length; i < len; i++){
@@ -67,7 +51,6 @@ function extend_pos(instance, module) { //module is instance.point_of_sale
                 // rebuild the search string and the ean13 indexing
 
                 this.cashier_search_string = "";
-                //this.cashier_by_ean13 = {};
 
                 for (var id in this.cashier_by_id) {
                     var cashier = this.cashier_by_id[id];
@@ -75,10 +58,6 @@ function extend_pos(instance, module) { //module is instance.point_of_sale
                     if(cashier.ean13){
                         this.cashier_by_ean13[cashier.ean13] = cashier;
                     }
-                    /*partner.address = (partner.street || '') +', '+
-                                      (partner.zip || '')    +' '+
-                                      (partner.city || '')   +', '+
-                                      (partner.country_id[1] || '');*/
                     this.cashier_search_string += this._cashier_search_string(cashier);
                 }
             }
@@ -90,9 +69,6 @@ function extend_pos(instance, module) { //module is instance.point_of_sale
         get_cashier_by_id: function(id){
             return this.cashier_by_id[id];
         },
-        /*get_cashier_by_ean13: function(ean13){
-            return this.cashier_by_ean13[ean13];
-        },*/
         get_cashiers_sorted: function(max_count){
             max_count = max_count ? Math.min(this.cashier_sorted.length, max_count) : this.cashier_sorted.length;
             var cashiers = [];
@@ -128,7 +104,7 @@ function extend_pos(instance, module) { //module is instance.point_of_sale
     module.PosModel.prototype.models.push({
             model:  'res.cashier',
             fields: ['name','id'],
-            domain: function(self){ return [['visible_in_pos','=',true],['user_id','=',self.session.uid]]; },
+            domain: function(self){ return [['visible_in_pos','=',true]]; },
             loaded: function(self,cashiers){
                 self.cashiers = [];
                 for(var i = 0; i < cashiers.length; i++){
@@ -148,7 +124,7 @@ function extend_pos(instance, module) { //module is instance.point_of_sale
                 user = this.pos.get('selectedOrder').get_client()  || this.pos.cashiers; //this.pos.user;
             }
             if(user){
-                return user;
+                return "";
             }else{
                 return "";
             }
@@ -271,13 +247,34 @@ function extend_pos(instance, module) { //module is instance.point_of_sale
             this.selected = ( this.pos.get('selectedOrder') === this.order )
             this._super();
             var self = this;
-            this.$el.click(function(){
+            if (self.pos.pos_widget.cashier_screen) {
+                if (!self.pos.pos_widget.cashier_screen.new_cashiers) {
+                    self.order.set_cashiers(self.pos.cashiers[0]);
+                } else {
+                    self.order.set_cashiers(self.pos.pos_widget.cashier_screen.new_cashiers);
+                }
+            } else {
+                self.order.set_cashiers(self.pos.cashiers[0]);
+            }
+            $('#cashier').click(function(){
                 if( self.pos.get('selectedOrder') === self.order ){
                     var ss = self.pos.pos_widget.screen_selector;
                     if(ss.get_current_screen() === 'cashierlist'){
                         ss.back();
                     }else if (ss.get_current_screen() !== 'receipt'){
                         ss.set_current_screen('cashierlist');
+                    }
+                }else{
+                    self.selectOrder();
+                }
+            });
+            $('#customer').click(function(){
+                if( self.pos.get('selectedOrder') === self.order ){
+                    var ss = self.pos.pos_widget.screen_selector;
+                    if(ss.get_current_screen() === 'clientlist'){
+                        ss.back();
+                    }else if (ss.get_current_screen() !== 'receipt'){
+                        ss.set_current_screen('clientlist');
                     }
                 }else{
                     self.selectOrder();
@@ -303,8 +300,24 @@ function extend_pos(instance, module) { //module is instance.point_of_sale
     // for save cashier into pos order
     var OrderSuper = module.Order;
     module.Order = module.Order.extend({
+        initialize: function(attributes){
+            this.set({
+                cashiers:         null,
+            });
+            return OrderSuper.prototype.initialize.call(this, attributes);
+        },
+        // the cashier related to the current order.
+        set_cashiers: function(cashiers){
+            this.set('cashiers',cashiers);
+        },
+        get_cashiers: function(){
+            return this.get('cashiers');
+        },
+        get_cashiers_name: function(){
+            var cashiers = this.get('cashiers');
+            return cashiers ? cashiers.name : "";
+        },
         export_as_JSON: function() {
-            alert("export at 306");
             var orderLines, paymentLines;
             orderLines = [];
             (this.get('orderLines')).each(_.bind( function(item) {
@@ -314,10 +327,6 @@ function extend_pos(instance, module) { //module is instance.point_of_sale
             (this.get('paymentLines')).each(_.bind( function(item) {
                 return paymentLines.push([0, 0, item.export_as_JSON()]);
             }, this));
-            console.log("nameeeeeeeeeeeeeeeeeeeeeeee", this.getName());
-            console.log("partner idddddddddddddddddddd", this.get_client() ? this.get_client().id : false);
-            console.log("usesr id",this.pos.cashier ? this.pos.cashier.id : this.pos.user.id);
-            console.log("cashier id",this.pos.pos_widget.cashier_screen.new_client ? this.pos.pos_widget.cashier_screen.new_client.id : false);
             return {
                 name: this.getName(),
                 amount_paid: this.getPaidTotal(),
@@ -327,9 +336,9 @@ function extend_pos(instance, module) { //module is instance.point_of_sale
                 lines: orderLines,
                 statement_ids: paymentLines,
                 pos_session_id: this.pos.pos_session.id,
-                partner_id: false, //this.get_client() ? this.get_client().id : false,
+                partner_id: this.get_client() ? this.get_client().id : false,
                 user_id: this.pos.cashier ? this.pos.cashier.id : this.pos.user.id,
-                cashier_id: this.get_client() ? this.get_client().id : false,
+                cashier_id: this.get_cashiers() ? this.get_cashiers().id : false,
                 uid: this.uid,
                 sequence_number: this.sequence_number,
             };
@@ -347,19 +356,18 @@ function extend_pos(instance, module) { //module is instance.point_of_sale
         show_leftpane: false,
 
         auto_back: true,
-
         show: function(){
             var self = this;
             this._super();
 
             this.renderElement();
             this.details_visible = false;
-            console.log("selected orderrrrrrrrrrrrrrrrrrr", this.pos.get('selectedOrder').get('client'));
-            this.old_client = this.pos.get('selectedOrder').get('client');
-            this.new_client = this.old_client;
+            this.old_cashiers = this.pos.get('selectedOrder').get('cashiers');
+            this.new_cashiers = this.old_cashiers;
 
             this.$('.back').click(function(){
-                self.pos_widget.screen_selector.back();
+                self.pos.pos_widget.screen_selector.set_current_screen('products');
+                //self.pos_widget.screen_selector.back();
             });
 
             this.$('.next').click(function(){
@@ -374,13 +382,13 @@ function extend_pos(instance, module) { //module is instance.point_of_sale
             });
 
             var cashiers = this.pos.db.get_cashiers_sorted(1000);
-            console.log("cashiersssssssssssssssssssssssss", cashiers);
+
             this.render_list(cashiers);
 
             this.reload_cashiers();
 
-            if( this.old_client ){
-                this.display_client_details('show',this.old_client,0);
+            if( this.old_cashiers ){
+                this.display_client_details('show',this.old_cashiers,0);
             }
 
             this.$('.client-list-contents').delegate('.client-line','click',function(event){
@@ -407,19 +415,12 @@ function extend_pos(instance, module) { //module is instance.point_of_sale
                 self.clear_search();
             });
         },
-       /* barcode_client_action: function(code){
-            if (this.editing_client) {
-                this.$('.detail.barcode').val(code.code);
-            } else if (this.pos.db.get_partner_by_ean13(code.code)) {
-                this.display_client_details('show',this.pos.db.get_partner_by_ean13(code.code));
-            }
-        },*/
         perform_search: function(query, associate_result){
             if(query){
                 var customers = this.pos.db.search_cashier(query);
                 this.display_client_details('hide');
                 if ( associate_result && customers.length === 1){
-                    this.new_client = customers[0];
+                    this.new_cashiers = customers[0];
                     this.save_changes();
                     this.pos_widget.screen_selector.back();
                 }
@@ -445,7 +446,7 @@ function extend_pos(instance, module) { //module is instance.point_of_sale
                 clientline.innerHTML = clientline_html;
                 clientline = clientline.childNodes[1];
 
-                if( cashiers === this.new_client ){
+                if( cashiers === this.new_cashiers ){
                     clientline.classList.add('highlight');
                 }else{
                     clientline.classList.remove('highlight');
@@ -456,14 +457,14 @@ function extend_pos(instance, module) { //module is instance.point_of_sale
         },
         save_changes: function(){
             if( this.has_client_changed() ){
-                this.pos.get('selectedOrder').set_client(this.new_client);
+                this.pos.get('selectedOrder').set_cashiers(this.new_cashiers);
             }
         },
         has_client_changed: function(){
-            if( this.old_client && this.new_client ){
-                return this.old_client.id !== this.new_client.id;
+            if( this.old_cashiers && this.new_cashiers ){
+                return this.old_cashiers.id !== this.new_cashiers.id;
             }else{
-                return !!this.old_client !== !!this.new_client;
+                return !!this.old_cashiers !== !!this.new_cashiers;
             }
         },
         toggle_save_button: function(){
@@ -471,8 +472,8 @@ function extend_pos(instance, module) { //module is instance.point_of_sale
             if (this.editing_client) {
                 $button.addClass('oe_hidden');
                 return;
-            } else if( this.new_client ){
-                if( !this.old_client){
+            } else if( this.new_cashiers ){
+                if( !this.old_cashiers){
                     $button.text(_t('Set Cashier'));
                 }else{
                     $button.text(_t('Change Cashier'));
@@ -489,14 +490,14 @@ function extend_pos(instance, module) { //module is instance.point_of_sale
                 $line.removeClass('highlight');
                 $line.addClass('lowlight');
                 this.display_client_details('hide',cashier);
-                this.new_client = null;
+                this.new_cashiers = null;
                 this.toggle_save_button();
             }else{
                 this.$('.client-list .highlight').removeClass('highlight');
                 $line.addClass('highlight');
                 var y = event.pageY - $line.parent().offset().top
                 this.display_client_details('show',cashier,y);
-                this.new_client = cashier;
+                this.new_cashiers = cashier;
                 this.toggle_save_button();
             }
         },
@@ -637,9 +638,9 @@ function extend_pos(instance, module) { //module is instance.point_of_sale
                 self.render_list(self.pos.db.get_cashiers_sorted(1000));
 
                 // update the currently assigned client if it has been changed in db.
-                var curr_client = self.pos.get_order().get_client();
+                var curr_client = self.pos.get_order().get_cashiers();
                 if (curr_client) {
-                    self.pos.get_order().set_client(self.pos.db.get_cashier_by_id(curr_client.id));
+                    self.pos.get_order().set_cashiers(self.pos.db.get_cashier_by_id(curr_client.id));
                 }
             });
         },
@@ -715,6 +716,68 @@ function extend_pos(instance, module) { //module is instance.point_of_sale
         },
         close: function(){
             this._super();
+        },
+    });
+
+    // replace show method for setting product screen when click on cancel.
+    module.ClientListScreenWidget.include({
+        show: function(){
+            var self = this;
+            this._super();
+
+            this.renderElement();
+            this.details_visible = false;
+            this.old_client = this.pos.get('selectedOrder').get('client');
+            this.new_client = this.old_client;
+
+            this.$('.back').click(function(){
+                self.pos.pos_widget.screen_selector.set_current_screen('products');
+                //self.pos_widget.screen_selector.back();
+            });
+
+            this.$('.next').click(function(){
+                self.save_changes();
+                self.pos_widget.screen_selector.back();
+            });
+
+            this.$('.new-customer').click(function(){
+                self.display_client_details('edit',{
+                    'country_id': self.pos.company.country_id,
+                });
+            });
+
+            var partners = this.pos.db.get_partners_sorted(1000);
+            this.render_list(partners);
+
+            this.reload_partners();
+
+            if( this.old_client ){
+                this.display_client_details('show',this.old_client,0);
+            }
+
+            this.$('.client-list-contents').delegate('.client-line','click',function(event){
+                self.line_select(event,$(this),parseInt($(this).data('id')));
+            });
+
+            var search_timeout = null;
+
+            if(this.pos.config.iface_vkeyboard && this.pos_widget.onscreen_keyboard){
+                this.pos_widget.onscreen_keyboard.connect(this.$('.searchbox input'));
+            }
+
+            this.$('.searchbox input').on('keyup',function(event){
+                clearTimeout(search_timeout);
+
+                var query = this.value;
+
+                search_timeout = setTimeout(function(){
+                    self.perform_search(query,event.which === 13);
+                },70);
+            });
+
+            this.$('.searchbox .search-clear').click(function(){
+                self.clear_search();
+            });
         },
     });
 
